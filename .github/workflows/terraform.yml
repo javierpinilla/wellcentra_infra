@@ -1,0 +1,96 @@
+name: Terraform Deployment Pipeline
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - '**.txt'
+
+jobs:
+  detect-component:
+    runs-on: ubuntu-latest
+    outputs:
+      component: ${{ steps.detect.outputs.component }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Detect Component from Commit Message
+        id: detect
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          echo "Commit Message: $COMMIT_MSG"
+          
+          declare -A component_map=(
+            ["[API]"]="api_gateway"
+            ["[EC2]"]="ec2_private_bastion"
+            ["[RDS]"]="rds"
+            ["[VPC]"]="vpc"
+          )
+          
+          found_component=""
+          count=0
+          
+          for tag in "${!component_map[@]}"; do
+            if [[ $COMMIT_MSG == *"$tag"* ]]; then
+              found_component="${component_map[$tag]}"
+              ((count++))
+            fi
+          done
+          
+          if [ $count -eq 1 ]; then
+            echo "Component detected: $found_component"
+            echo "component=$found_component" >> $GITHUB_OUTPUT
+          elif [ $count -gt 1 ]; then
+            echo "Error: Multiple deployment tags found in commit message"
+            exit 1
+          else
+            echo "No valid deployment tag found"
+            echo "component=none" >> $GITHUB_OUTPUT
+          fi
+
+  deploy:
+    needs: detect-component
+    if: needs.detect-component.outputs.component != 'none'
+    runs-on: ubuntu-latest
+    env:
+      COMPONENT: ${{ needs.detect-component.outputs.component }}
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: "1.4.5"
+          terraform_wrapper: false
+
+      - name: Terraform Format Check
+        run: terraform fmt -check
+        working-directory: ${{ env.COMPONENT }}
+
+      - name: Terraform Validate
+        run: terraform validate
+        working-directory: ${{ env.COMPONENT }}
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ${{ env.COMPONENT }}
+
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+        working-directory: ${{ env.COMPONENT }}
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan
+        working-directory: ${{ env.COMPONENT }}
