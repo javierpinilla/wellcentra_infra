@@ -44,7 +44,7 @@ jobs:
             echo "component=none" >> $GITHUB_OUTPUT
           fi
 
-  deploy:
+  run_terraform:
     needs: detect-component
     if: needs.detect-component.outputs.component != 'none' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
