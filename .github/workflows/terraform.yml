@@ -6,7 +6,7 @@ on:
       - main
     paths-ignore:
       #- '**.md'
-      - '**.txt'
+      #- '**.txt'
 
 jobs:
   detect-component:
