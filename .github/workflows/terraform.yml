@@ -24,31 +24,21 @@ jobs:
 
           echo "Commit Message: '$COMMIT_MSG'"
 
-          declare -A component_map=(
-            '[API]'='api_gateway'
-            '[EC2]'='ec2_private_bastion'
-            '[RDS]'='rds'
-            '[VPC]'='vpc'
-          )
+          if [[ "$COMMIT_MSG" == *"Crear VPC"* ]]; then
+            found_component="vpc"
+          elif [[ "$COMMIT_MSG" == *"Crear RDS"* ]]; then
+            found_component="rds"
+          elif [[ "$COMMIT_MSG" == *"Crear EC2"* ]]; then
+            found_component="ec2_private_bastion"
+          elif [[ "$COMMIT_MSG" == *"Crear API"* ]]; then
+            found_component="api_gateway"
+          else
+            found_component=""
+          fi
 
-          found_component=""
-          count=0
-
-          for tag in "${!component_map[@]}"; do
-            echo "Buscando tag: '$tag'"
-            if [[ "$COMMIT_MSG" == *"$tag"* ]]; then
-              echo "Coincidencia encontrada con: $tag"
-              found_component="${component_map[$tag]}"
-              ((count++))
-            fi
-          done
-
-          if [ $count -eq 1 ]; then
+          if [[ -n "$found_component" ]]; then
             echo "Component detected: $found_component"
             echo "component=$found_component" >> $GITHUB_OUTPUT
-          elif [ $count -gt 1 ]; then
-            echo "::error::Multiple deployment tags found in commit message"
-            exit 1
           else
             echo "::notice::No valid deployment tag found"
             echo "component=none" >> $GITHUB_OUTPUT
