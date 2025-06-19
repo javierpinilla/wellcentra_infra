@@ -8,7 +8,7 @@ terraform {
       source  = "cyrilgdn/postgresql"
       version = "~> 1.25.0"
     }
-    time     = {}
-    random   = {}
+    time   = {}
+    random = {}
   }
 }

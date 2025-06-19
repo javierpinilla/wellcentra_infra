@@ -35,9 +35,9 @@ resource "aws_iam_role" "ec2_role" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Effect = "Allow"
+      Effect    = "Allow"
       Principal = { Service = "ec2.amazonaws.com" }
-      Action = "sts:AssumeRole"
+      Action    = "sts:AssumeRole"
     }]
   })
 
@@ -52,7 +52,7 @@ resource "aws_iam_role_policy_attachment" "ec2_ssm" {
 }
 
 resource "aws_iam_instance_profile" "ec2_instance_profile" {
-   name = "${local.vpc_name}-ec2-profile"
+  name = "${local.vpc_name}-ec2-profile"
   role = aws_iam_role.ec2_role.name
 }
 
@@ -76,7 +76,7 @@ data "aws_ami" "amazon_linux_2023" {
 resource "aws_instance" "ec2_instance" {
   ami                         = data.aws_ami.amazon_linux_2023.id
   instance_type               = "t2.micro"
-  subnet_id                   = element(data.aws_subnet.private_subnets,0).id
+  subnet_id                   = element(data.aws_subnet.private_subnets, 0).id
   vpc_security_group_ids      = [data.aws_security_group.ec2_sg.id]
   associate_public_ip_address = false
   iam_instance_profile        = aws_iam_instance_profile.ec2_instance_profile.name
@@ -89,7 +89,7 @@ resource "aws_instance" "ec2_instance" {
       Name = "${local.ec2_name}-ebs-root"
     })
     delete_on_termination = true
-    encrypted = true
+    encrypted             = true
   }
 
   user_data = <<-EOF

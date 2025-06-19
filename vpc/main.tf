@@ -105,9 +105,9 @@ resource "aws_nat_gateway" "vpc_natgw" {
 }
 
 resource "aws_ec2_tag" "vpc_nat_eni_name" {
-  key          = "Name"
-  value        = "${local.vpc_name}-natgw-eni"
-  resource_id  = aws_nat_gateway.vpc_natgw.network_interface_id
+  key         = "Name"
+  value       = "${local.vpc_name}-natgw-eni"
+  resource_id = aws_nat_gateway.vpc_natgw.network_interface_id
 
   depends_on = [aws_nat_gateway.vpc_natgw]
 }
@@ -294,9 +294,9 @@ resource "aws_security_group" "vpc_rds_sg" {
 
   # Acceso desde subredes privadas (generales y RDS)
   ingress {
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
+    from_port = 5432
+    to_port   = 5432
+    protocol  = "tcp"
     cidr_blocks = [
       var.subnet_private_cidrs[0],
       var.subnet_private_cidrs[1],

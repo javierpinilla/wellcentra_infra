@@ -64,12 +64,12 @@ EOT
 
   environment {
     variables = {
-      DB_SECRET     = local.secret_name
+      DB_SECRET = local.secret_name
     }
   }
 
   vpc_config {
-    subnet_ids         = element(data.aws_subnet.private_subnets,1).id
+    subnet_ids         = element(data.aws_subnet.private_subnets, 1).id
     security_group_ids = [data.aws_security_group.ec2_sg.id]
   }
 

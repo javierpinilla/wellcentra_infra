@@ -1,6 +1,6 @@
-region  = "us-east-1"
+region      = "us-east-1"
 environment = "dev"
-vpc_name = "wellcentra"
+vpc_name    = "wellcentra"
 
 common_tags = {
   Project     = "Wellcentra"
