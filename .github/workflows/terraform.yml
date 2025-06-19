@@ -24,10 +24,10 @@ jobs:
           echo "Commit Message: $COMMIT_MSG"
           
           declare -A component_map=(
-            ['[API]']="api_gateway"
-            ['[EC2]']="ec2_private_bastion"
-            ['[RDS]']="rds"
-            ['[VPC]']="vpc"
+            $"[API]"="api_gateway"
+            $"[EC2]"="ec2_private_bastion"
+            $"[RDS]"="rds"
+            $"[VPC]"="vpc"
           )
           
           found_component=""
