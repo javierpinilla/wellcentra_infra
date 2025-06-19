@@ -111,7 +111,7 @@ resource "time_sleep" "rds_wait" {
 resource "postgresql_database" "app_db" {
   provider = postgresql.rds
 
-  name              = var.rds_name
+  name              = local.db_name
   owner             = "postgres"
   encoding          = "UTF8"
   lc_collate        = "en_US.UTF-8"
@@ -127,7 +127,7 @@ resource "postgresql_database" "app_db" {
 resource "postgresql_role" "app_user" {
   provider = postgresql.rds
 
-  name     = rds_db_name
+  name     = local.db_name
   login    = true
   password = random_password.app_db_password.result
 }
