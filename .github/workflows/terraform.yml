@@ -60,32 +60,25 @@ jobs:
           if [ -d "${{ env.COMPONENT }}/.terraform" ]; then
             rm -rf "${{ env.COMPONENT }}/.terraform"
           fi
+          if [ -f "${{ env.COMPONENT }}/.terraform.lock.hcl" ]; then
+            rm -f "${{ env.COMPONENT }}/.terraform.lock.hcl"
+          fi
         shell: bash
 
-      - name: Cache Terraform Providers
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.COMPONENT }}/.terraform
-          key: ${{ runner.os }}-tf-${{ hashFiles('${{ env.COMPONENT }}/.terraform.lock.hcl') }}
-          restore-keys: |
-            ${{ runner.os }}-tf-
+      # - name: Cache Terraform Providers
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: ${{ env.COMPONENT }}/.terraform
+      #     key: ${{ runner.os }}-tf-${{ hashFiles('${{ env.COMPONENT }}/.terraform.lock.hcl') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-tf-
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: "1.12.2"
           terraform_wrapper: false
-
-      - name: Terraform Format Check
-        run: terraform fmt -check -recursive
-        working-directory: ${{ env.COMPONENT }}
-        continue-on-error: false
-
-      - name: Terraform Validate
-        run: terraform validate
-        working-directory: ${{ env.COMPONENT }}
-        continue-on-error: false
-
+      
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -97,6 +90,16 @@ jobs:
       - name: Terraform Init
         run: terraform init -input=false
         working-directory: ${{ env.COMPONENT }}
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+        working-directory: ${{ env.COMPONENT }}
+        continue-on-error: false
+
+      - name: Terraform Validate
+        run: terraform validate
+        working-directory: ${{ env.COMPONENT }}
+        continue-on-error: false
 
       - name: Terraform Plan
         run: |
