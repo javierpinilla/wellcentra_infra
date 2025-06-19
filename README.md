@@ -12,9 +12,9 @@ vpc
 ### Y aca una un tag en particular:
 
 ```bash
-api_gateway=API \\
-ec2_private_bastion=EC2 \\
-rds=RDS \\
+api_gateway=API
+ec2_private_bastion=EC2
+rds=RDS
 vpc=VPC
 ```
 
