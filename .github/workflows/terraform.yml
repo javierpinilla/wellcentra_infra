@@ -26,22 +26,41 @@ jobs:
 
           if [[ "$COMMIT_MSG" == *"Crear VPC"* ]]; then
             found_component="vpc"
+            action="apply"
+          elif [[ "$COMMIT_MSG" == *"Destroy VPC"* ]]; then
+            found_component="vpc"
+            action="destroy"
           elif [[ "$COMMIT_MSG" == *"Crear RDS"* ]]; then
             found_component="rds"
+            action="apply"
+          elif [[ "$COMMIT_MSG" == *"Destroy RDS"* ]]; then
+            found_component="rds"
+            action="destroy"
           elif [[ "$COMMIT_MSG" == *"Crear EC2"* ]]; then
             found_component="ec2_private_bastion"
+            action="apply"
+          elif [[ "$COMMIT_MSG" == *"Destroy EC2"* ]]; then
+            found_component="ec2_private_bastion"
+            action="destroy"
           elif [[ "$COMMIT_MSG" == *"Crear API"* ]]; then
             found_component="api_gateway"
+            action="apply"
+          elif [[ "$COMMIT_MSG" == *"Destroy API"* ]]; then
+            found_component="api_gateway"
+            action="destroy"
           else
             found_component=""
+            action=""
           fi
 
           if [[ -n "$found_component" ]]; then
             echo "Component detected: $found_component"
             echo "component=$found_component" >> $GITHUB_OUTPUT
+            echo "action=$action" >> $GITHUB_OUTPUT
           else
             echo "::notice::No valid deployment tag found"
             echo "component=none" >> $GITHUB_OUTPUT
+            echo "action=none" >> $GITHUB_OUTPUT
           fi
 
   run_terraform:
@@ -50,11 +69,12 @@ jobs:
     runs-on: ubuntu-latest
     env:
       COMPONENT: ${{ needs.detect-component.outputs.component }}
-    
+      ACTION: ${{ needs.detect-component.outputs.action }}
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
-      
+
       - name: Clean Terraform Dir
         run: |
           if [ -d "${{ env.COMPONENT }}/.terraform" ]; then
@@ -64,14 +84,6 @@ jobs:
             rm -f "${{ env.COMPONENT }}/.terraform.lock.hcl"
           fi
         shell: bash
-
-      # - name: Cache Terraform Providers
-      #   uses: actions/cache@v3
-      #   with:
-      #     path: ${{ env.COMPONENT }}/.terraform
-      #     key: ${{ runner.os }}-tf-${{ hashFiles('${{ env.COMPONENT }}/.terraform.lock.hcl') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-tf-
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
@@ -102,12 +114,24 @@ jobs:
         continue-on-error: false
 
       - name: Terraform Plan
+        id: plan
+        run: |
+          terraform plan -out=tfplan -destroy
+          echo "PLAN_SUMMARY<<EOF" >> $GITHUB_ENV
+          terraform show -no-color tfplan | grep -E '(Plan:|No changes)' >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+        working-directory: ${{ env.COMPONENT }}
+        if: env.ACTION == 'destroy'
+
+      - name: Terraform Plan Apply
+        id: plan_apply
         run: |
           terraform plan -out=tfplan
           echo "PLAN_SUMMARY<<EOF" >> $GITHUB_ENV
           terraform show -no-color tfplan | grep -E '(Plan:|No changes)' >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
         working-directory: ${{ env.COMPONENT }}
+        if: env.ACTION == 'apply'
 
       - name: Show Plan Summary
         run: echo "$PLAN_SUMMARY"
@@ -115,3 +139,9 @@ jobs:
       - name: Terraform Apply
         run: terraform apply -auto-approve tfplan
         working-directory: ${{ env.COMPONENT }}
+        if: env.ACTION == 'apply'
+
+      - name: Terraform Destroy
+        run: terraform destroy -auto-approve tfplan
+        working-directory: ${{ env.COMPONENT }}
+        if: env.ACTION == 'destroy'

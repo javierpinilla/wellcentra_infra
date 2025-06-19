@@ -90,58 +90,6 @@ resource "aws_db_instance" "rds_instance" {
   })
 }
 
-#Crear DB
-provider "postgresql" {
-  alias = "rds"
-
-  host            = aws_db_instance.rds_instance.address
-  port            = aws_db_instance.rds_instance.port
-  username        = "postgres"
-  password        = random_password.rds_password.result
-  sslmode         = "require"
-  connect_timeout = 15
-  superuser       = false
-}
-
-resource "time_sleep" "rds_wait" {
-  create_duration = "3m"
-  depends_on      = [aws_db_instance.rds_instance]
-}
-
-resource "postgresql_database" "app_db" {
-  provider = postgresql.rds
-
-  name              = local.db_name
-  owner             = "postgres"
-  encoding          = "UTF8"
-  lc_collate        = "en_US.UTF-8"
-  lc_ctype          = "en_US.UTF-8"
-  template          = "template0"
-  connection_limit  = -1
-  allow_connections = true
-
-  depends_on = [time_sleep.rds_wait]
-}
-
-# Crear usuario igual que el nombre de la base
-resource "postgresql_role" "app_user" {
-  provider = postgresql.rds
-
-  name     = local.db_name
-  login    = true
-  password = random_password.app_db_password.result
-}
-
-# Otorgar privilegios
-resource "postgresql_grant" "app_user_privs" {
-  provider = postgresql.rds
-
-  database    = postgresql_database.app_db.name
-  role        = postgresql_role.app_user.name
-  object_type = "database"
-  privileges  = ["CONNECT", "TEMPORARY", "CREATE"]
-}
-
 # Clave para usuario de base.
 resource "random_password" "app_db_password" {
   length  = 16
@@ -165,3 +113,58 @@ resource "aws_secretsmanager_secret_version" "rds_app_secret_version" {
     password = random_password.app_db_password.result
   })
 }
+
+## Esta parte solo va a estar disponible si los runners son self-hosted dentro de la vpc o con acceso a ella.
+
+##Crear DB
+#provider "postgresql" {
+#  alias = "rds"
+#
+#  host            = aws_db_instance.rds_instance.address
+#  port            = aws_db_instance.rds_instance.port
+#  username        = "postgres"
+#  password        = random_password.rds_password.result
+#  sslmode         = "require"
+#  connect_timeout = 15
+#  superuser       = false
+#}
+
+#resource "time_sleep" "rds_wait" {
+#  create_duration = "3m"
+#  depends_on      = [aws_db_instance.rds_instance]
+#}
+
+#resource "postgresql_database" "app_db" {
+#  provider = postgresql.rds
+#
+#  name              = local.db_name
+#  owner             = "postgres"
+#  encoding          = "UTF8"
+#  lc_collate        = "en_US.UTF-8"
+#  lc_ctype          = "en_US.UTF-8"
+#  template          = "template0"
+#  connection_limit  = -1
+#  allow_connections = true
+
+#  depends_on = [time_sleep.rds_wait]
+#}
+
+## Crear usuario igual que el nombre de la base
+#resource "postgresql_role" "app_user" {
+#  provider = postgresql.rds
+
+#  name     = local.db_name
+#  login    = true
+#  password = random_password.app_db_password.result
+#}
+
+# Otorgar privilegios
+#resource "postgresql_grant" "app_user_privs" {
+#  provider = postgresql.rds
+#
+#  database    = postgresql_database.app_db.name
+#  role        = postgresql_role.app_user.name
+#  object_type = "database"
+#  privileges  = ["CONNECT", "TEMPORARY", "CREATE"]
+#}
+
