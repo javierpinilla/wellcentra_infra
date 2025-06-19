@@ -90,7 +90,7 @@ resource "aws_db_instance" "rds_instance" {
   })
 }
 
-Crear DB
+#Crear DB
 provider "postgresql" {
   alias = "rds"
 

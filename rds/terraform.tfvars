@@ -1,4 +1,4 @@
-region  = "us-east-2"
+region  = "us-east-1"
 vpc_name = "wellcentra"
 environment = "dev"
 
