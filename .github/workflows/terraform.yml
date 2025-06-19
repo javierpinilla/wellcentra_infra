@@ -65,7 +65,7 @@ jobs:
 
   terraform_apply:
     needs: detect-component
-    if: needs.detect-component.outputs.component != 'none' && github.ref == 'refs/heads/main'
+    if: needs.detect-component.outputs.component != 'none' && needs.detect-component.outputs.action == 'apply' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     env:
       COMPONENT: ${{ needs.detect-component.outputs.component }}
@@ -137,7 +137,7 @@ jobs:
   
   terraform_destroy:
     needs: detect-component
-    if: needs.detect-component.outputs.action == 'destroy' && github.ref == 'refs/heads/main'
+    if: needs.detect-component.outputs.component != 'none' && needs.detect-component.outputs.action == 'destroy' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     env:
       COMPONENT: ${{ needs.detect-component.outputs.component }}
