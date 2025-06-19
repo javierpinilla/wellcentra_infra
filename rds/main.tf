@@ -104,7 +104,7 @@ provider "postgresql" {
 }
 
 resource "time_sleep" "rds_wait" {
-  create_duration = "10m"
+  create_duration = "3m"
   depends_on      = [aws_db_instance.rds_instance]
 }
 
