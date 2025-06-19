@@ -63,14 +63,86 @@ jobs:
             echo "action=none" >> $GITHUB_OUTPUT
           fi
 
-  run_terraform:
+  terraform_apply:
     needs: detect-component
     if: needs.detect-component.outputs.component != 'none' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     env:
       COMPONENT: ${{ needs.detect-component.outputs.component }}
-      ACTION: ${{ needs.detect-component.outputs.action }}
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+      
+      - name: Clean Terraform Dir
+        run: |
+          if [ -d "${{ env.COMPONENT }}/.terraform" ]; then
+            rm -rf "${{ env.COMPONENT }}/.terraform"
+          fi
+          if [ -f "${{ env.COMPONENT }}/.terraform.lock.hcl" ]; then
+            rm -f "${{ env.COMPONENT }}/.terraform.lock.hcl"
+          fi
+        shell: bash
 
+      # - name: Cache Terraform Providers
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: ${{ env.COMPONENT }}/.terraform
+      #     key: ${{ runner.os }}-tf-${{ hashFiles('${{ env.COMPONENT }}/.terraform.lock.hcl') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-tf-
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: "1.12.2"
+          terraform_wrapper: false
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          mask-aws-account-id: true
+
+      - name: Terraform Init
+        run: terraform init -input=false
+        working-directory: ${{ env.COMPONENT }}
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+        working-directory: ${{ env.COMPONENT }}
+        continue-on-error: false
+
+      - name: Terraform Validate
+        run: terraform validate
+        working-directory: ${{ env.COMPONENT }}
+        continue-on-error: false
+
+      - name: Terraform Plan
+        run: |
+          terraform plan -out=tfplan
+          echo "PLAN_SUMMARY<<EOF" >> $GITHUB_ENV
+          terraform show -no-color tfplan | grep -E '(Plan:|No changes)' >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+        working-directory: ${{ env.COMPONENT }}
+
+      - name: Show Plan Summary
+        run: echo "$PLAN_SUMMARY"
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan
+        working-directory: ${{ env.COMPONENT }}
+  
+  terraform_destroy:
+    needs: detect-component
+    if: needs.detect-component.outputs.action == 'destroy' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      COMPONENT: ${{ needs.detect-component.outputs.component }}
+      ACTION: ${{ needs.detect-component.outputs.action }}
+    
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
@@ -103,45 +175,7 @@ jobs:
         run: terraform init -input=false
         working-directory: ${{ env.COMPONENT }}
 
-      - name: Terraform Format Check
-        run: terraform fmt -check -recursive
-        working-directory: ${{ env.COMPONENT }}
-        continue-on-error: false
-
-      - name: Terraform Validate
-        run: terraform validate
-        working-directory: ${{ env.COMPONENT }}
-        continue-on-error: false
-
-      - name: Terraform Plan
-        id: plan
-        run: |
-          terraform plan -out=tfplan -destroy
-          echo "PLAN_SUMMARY<<EOF" >> $GITHUB_ENV
-          terraform show -no-color tfplan | grep -E '(Plan:|No changes)' >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-        working-directory: ${{ env.COMPONENT }}
-        if: env.ACTION == 'destroy'
-
-      - name: Terraform Plan Apply
-        id: plan_apply
-        run: |
-          terraform plan -out=tfplan
-          echo "PLAN_SUMMARY<<EOF" >> $GITHUB_ENV
-          terraform show -no-color tfplan | grep -E '(Plan:|No changes)' >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-        working-directory: ${{ env.COMPONENT }}
-        if: env.ACTION == 'apply'
-
-      - name: Show Plan Summary
-        run: echo "$PLAN_SUMMARY"
-
-      - name: Terraform Apply
-        run: terraform apply -auto-approve tfplan
-        working-directory: ${{ env.COMPONENT }}
-        if: env.ACTION == 'apply'
-
       - name: Terraform Destroy
-        run: terraform destroy -auto-approve tfplan
+        run: |
+          terraform destroy -auto-approve
         working-directory: ${{ env.COMPONENT }}
-        if: env.ACTION == 'destroy'
