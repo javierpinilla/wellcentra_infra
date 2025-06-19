@@ -44,11 +44,11 @@ data "aws_subnet" "private_subnets" {
 
 # Secret Manager para RDS
 resource "aws_secretsmanager_secret" "rds_secret" {
-  name        = "rds/${var.environment}/${var.rds_name}"
+  name        = "rds/${var.environment}/${local.rds_name}"
   description = "Credenciales para RDS"
 
   tags = merge(var.common_tags, {
-    Name = "rds/${var.environment}/${var.rds_name}"
+    Name = "rds/${var.environment}/${local.rds_name}"
   })
 }
 
@@ -94,8 +94,8 @@ resource "aws_db_instance" "rds_instance" {
 provider "postgresql" {
   alias = "rds"
 
-  host            = aws_db_instance.postgres.address
-  port            = aws_db_instance.postgres.port
+  host            = aws_db_instance.rds_instance.address
+  port            = aws_db_instance.rds_instance.port
   username        = "postgres"
   password        = random_password.rds_password.result
   sslmode         = "require"
@@ -105,7 +105,7 @@ provider "postgresql" {
 
 resource "time_sleep" "rds_wait" {
   create_duration = "10m"
-  depends_on      = [aws_db_instance.postgres]
+  depends_on      = [aws_db_instance.rds_instance]
 }
 
 resource "postgresql_database" "app_db" {
