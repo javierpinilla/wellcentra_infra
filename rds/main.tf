@@ -42,13 +42,17 @@ data "aws_subnet" "private_subnets" {
   }
 }
 
+resource "random_id" "secret_suffix" {
+  byte_length = 3 # Genera ~6 caracteres hexadecimales
+}
+
 # Secret Manager para RDS
 resource "aws_secretsmanager_secret" "rds_secret" {
-  name        = "rds/${var.environment}/${local.rds_name}"
+  name        = "rds/${var.environment}/${local.rds_name}/v/${random_id.secret_suffix.hex}"
   description = "Credenciales para RDS"
 
   tags = merge(var.common_tags, {
-    Name = "rds/${var.environment}/${local.rds_name}"
+    Name = "rds/${var.environment}/${local.rds_name}/v/${random_id.secret_suffix.hex}"
   })
 }
 
@@ -98,18 +102,18 @@ resource "random_password" "app_db_password" {
 
 # Secret Manager para el usuario de app de RDS
 resource "aws_secretsmanager_secret" "rds_app_secret" {
-  name        = "app/${var.environment}/${var.vpc_name}"
+  name        = "app/${var.environment}/${var.vpc_name}/v/${random_id.secret_suffix.hex}"
   description = "Credenciales para usuario de RDS"
 
   tags = merge(var.common_tags, {
-    Name = "app/${var.environment}/${var.vpc_name}"
+    Name = "app/${var.environment}/${var.vpc_name}/v/${random_id.secret_suffix.hex}"
   })
 }
 
 resource "aws_secretsmanager_secret_version" "rds_app_secret_version" {
   secret_id = aws_secretsmanager_secret.rds_app_secret.id
   secret_string = jsonencode({
-    username = "postgres"
+    username = local.db_name
     password = random_password.app_db_password.result
   })
 }
