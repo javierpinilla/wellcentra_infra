@@ -54,17 +54,26 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
+      
+      - name: Clean Terraform Dir
+        run: |
+          if [ -d "${{ env.COMPONENT }}/.terraform" ]; then
+            rm -rf "${{ env.COMPONENT }}/.terraform"
+          fi
+        shell: bash
 
       - name: Cache Terraform Providers
         uses: actions/cache@v3
         with:
           path: ${{ env.COMPONENT }}/.terraform
           key: ${{ runner.os }}-tf-${{ hashFiles('${{ env.COMPONENT }}/.terraform.lock.hcl') }}
+          restore-keys: |
+            ${{ runner.os }}-tf-
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
-          terraform_version: "1.4.5"
+          terraform_version: "1.12.2"
           terraform_wrapper: false
 
       - name: Terraform Format Check
