@@ -34,6 +34,6 @@ vpc=VPC
 
 AWS_ACCESS_KEY_ID \
 AWS_SECRET_ACCESS_KEY \
-AWS_REGION \
+AWS_REGION
 
-*Con permisos para crear los recursos
+**Con permisos para crear los recursos**
