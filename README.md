@@ -29,3 +29,11 @@ vpc=VPC
 ```bash
 "Destroy RDS" destruirá los recursos del RDS.
 ```
+
+### Hay que agregar 3 secrets en el repo:
+
+AWS_ACCESS_KEY_ID \
+AWS_SECRET_ACCESS_KEY \
+AWS_REGION \
+
+*Con permisos para crear los recursos
