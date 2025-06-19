@@ -37,3 +37,8 @@ variable "common_tags" {
   description = "Etiquetas comunes para todos los recursos"
   type        = map(string)
 }
+
+variable "environment" {
+  description = "Entorno"
+  type        = string
+}
